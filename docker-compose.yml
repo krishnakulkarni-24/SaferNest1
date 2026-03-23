@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: safernest-postgres
+    environment:
+      POSTGRES_DB: safernest
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: safernest-backend
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/safernest
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: c2FmZXJuZXN0LXN1cGVyLXNlY3JldC1rZXktZm9yLWp3dC1zaWduaW5nLTEyMzQ1Njc4OTA=
+      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: safernest-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
