@@ -19,6 +19,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -54,13 +56,25 @@ public class AiService {
     @Value("${openai.max-tokens:120}")
     private Integer openAiMaxTokens;
 
+    @Value("${ai.provider:auto}")
+    private String aiProvider;
+
+    @Value("${gemini.api-key:}")
+    private String geminiApiKey;
+
+    @Value("${gemini.base-url:https://generativelanguage.googleapis.com/v1beta}")
+    private String geminiBaseUrl;
+
+    @Value("${gemini.model:gemini-1.5-flash}")
+    private String geminiModel;
+
     public String summarizeReports(List<String> reports) {
         if (reports == null || reports.isEmpty()) {
             return FALLBACK_SUMMARY;
         }
 
-        if (openAiApiKey == null || openAiApiKey.isBlank()) {
-            log.warn("AI summarize skipped because OPENAI_API_KEY is missing");
+        if (!hasConfiguredApiKey()) {
+            log.warn("AI summarize skipped because no API key is configured for provider {}", resolveProvider());
             return FALLBACK_SUMMARY;
         }
 
@@ -77,27 +91,9 @@ public class AiService {
                 return cachedSummary;
             }
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(openAiApiKey);
-
-            Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("model", openAiModel);
-            payload.put("messages", List.of(
-                    Map.of("role", "system", "content", "You summarize disaster incidents for emergency command teams."),
-                    Map.of("role", "user", "content", prompt)
-            ));
-            payload.put("temperature", 0.2);
-            payload.put("max_tokens", openAiMaxTokens);
-
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
-
-            ResponseEntity<String> response = restTemplate.exchange(
-                    openAiBaseUrl + "/v1/chat/completions",
-                    HttpMethod.POST,
-                    request,
-                    String.class
-            );
+                ResponseEntity<String> response = isGeminiMode()
+                    ? callGemini(prompt)
+                    : callOpenAi(prompt);
 
             String responseBody = response.getBody();
             if (responseBody == null || responseBody.isBlank()) {
@@ -105,7 +101,9 @@ public class AiService {
             }
 
             JsonNode root = objectMapper.readTree(responseBody);
-            JsonNode contentNode = root.path("choices").path(0).path("message").path("content");
+                JsonNode contentNode = isGeminiMode()
+                    ? root.path("candidates").path(0).path("content").path("parts").path(0).path("text")
+                    : root.path("choices").path(0).path("message").path("content");
 
             if (contentNode.isMissingNode() || contentNode.isNull()) {
                 return FALLBACK_SUMMARY;
@@ -172,7 +170,8 @@ public class AiService {
     }
 
     private String buildCacheKey(String prompt) {
-        return openAiModel + "::" + prompt.hashCode();
+        String providerModel = isGeminiMode() ? geminiModel : openAiModel;
+        return resolveProvider() + "::" + providerModel + "::" + prompt.hashCode();
     }
 
     private String getCachedSummary(String cacheKey) {
@@ -197,5 +196,98 @@ public class AiService {
     }
 
     private record CachedSummary(String summary, Instant createdAt) {
+    }
+
+    private ResponseEntity<String> callOpenAi(String prompt) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(openAiApiKey);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", openAiModel);
+        payload.put("messages", List.of(
+                Map.of("role", "system", "content", "You summarize disaster incidents for emergency command teams."),
+                Map.of("role", "user", "content", prompt)
+        ));
+        payload.put("temperature", 0.2);
+        payload.put("max_tokens", openAiMaxTokens);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+        return restTemplate.exchange(
+                openAiBaseUrl + "/v1/chat/completions",
+                HttpMethod.POST,
+                request,
+                String.class
+        );
+    }
+
+    private ResponseEntity<String> callGemini(String prompt) {
+        String key = resolveGeminiApiKey();
+        String endpoint = geminiBaseUrl
+                + "/models/"
+                + geminiModel
+                + ":generateContent?key="
+                + URLEncoder.encode(key, StandardCharsets.UTF_8);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, Object> generationConfig = new LinkedHashMap<>();
+        generationConfig.put("temperature", 0.2);
+        generationConfig.put("maxOutputTokens", openAiMaxTokens);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("contents", List.of(
+                Map.of("parts", List.of(
+                        Map.of("text", "You summarize disaster incidents for emergency command teams.\n\n" + prompt)
+                ))
+        ));
+        payload.put("generationConfig", generationConfig);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
+        return restTemplate.exchange(endpoint, HttpMethod.POST, request, String.class);
+    }
+
+    private boolean hasConfiguredApiKey() {
+        if (isGeminiMode()) {
+            return resolveGeminiApiKey() != null;
+        }
+
+        return openAiApiKey != null && !openAiApiKey.isBlank();
+    }
+
+    private String resolveGeminiApiKey() {
+        if (geminiApiKey != null && !geminiApiKey.isBlank()) {
+            return geminiApiKey;
+        }
+
+        if (openAiApiKey != null && !openAiApiKey.isBlank()) {
+            return openAiApiKey;
+        }
+
+        return null;
+    }
+
+    private String resolveProvider() {
+        return isGeminiMode() ? "gemini" : "openai";
+    }
+
+    private boolean isGeminiMode() {
+        String provider = aiProvider == null ? "auto" : aiProvider.trim().toLowerCase();
+        if ("gemini".equals(provider)) {
+            return true;
+        }
+        if ("openai".equals(provider)) {
+            return false;
+        }
+
+        if (openAiModel != null && openAiModel.trim().toLowerCase().startsWith("gemini")) {
+            return true;
+        }
+        if (openAiBaseUrl != null && openAiBaseUrl.contains("generativelanguage.googleapis.com")) {
+            return true;
+        }
+
+        return openAiApiKey != null && openAiApiKey.startsWith("AIza");
     }
 }
