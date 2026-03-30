@@ -77,38 +77,38 @@ const DashboardPage = () => {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="sn-card hover:scale-[1.02]">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-500">Total Incidents</p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Incidents</p>
             <AlertTriangle className="text-[#F97316]" size={18} />
           </div>
-          <p className="mt-3 text-3xl font-extrabold text-[#111827]">{stats.incidents}</p>
+          <p className="mt-3 text-3xl font-extrabold text-slate-900 dark:text-white">{stats.incidents}</p>
         </div>
 
         <div className="sn-card hover:scale-[1.02]">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-500">Active Cases</p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Cases</p>
             <Activity className="text-[#2563EB]" size={18} />
           </div>
-          <p className="mt-3 text-3xl font-extrabold text-[#111827]">
+          <p className="mt-3 text-3xl font-extrabold text-slate-900 dark:text-white">
             {incidents.filter((incident) => incident.status !== "RESOLVED").length}
           </p>
         </div>
 
         <div className="sn-card hover:scale-[1.02]">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-500">Resolved</p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Resolved</p>
             <CheckCircle2 className="text-[#22C55E]" size={18} />
           </div>
-          <p className="mt-3 text-3xl font-extrabold text-[#111827]">
+          <p className="mt-3 text-3xl font-extrabold text-slate-900 dark:text-white">
             {incidents.filter((incident) => incident.status === "RESOLVED").length}
           </p>
         </div>
 
         <div className="sn-card hover:scale-[1.02]">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-500">Open Tasks</p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Open Tasks</p>
             <Activity className="text-[#1E40AF]" size={18} />
           </div>
-          <p className="mt-3 text-3xl font-extrabold text-[#111827]">{stats.tasks}</p>
+          <p className="mt-3 text-3xl font-extrabold text-slate-900 dark:text-white">{stats.tasks}</p>
         </div>
       </div>
 

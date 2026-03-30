@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
+import { taskApi } from "../api/services";
+import { hasTaskForIncident } from "../utils/incidentTasks";
+import { getTaskForIncident } from "../utils/getTaskForIncident";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { Flame, HeartPulse, Waves } from "lucide-react";
+import { Flame, HeartPulse, Waves, PlusCircle, CheckCircle2, RefreshCw, AlertTriangle } from "lucide-react";
 import { incidentApi } from "../api/services";
+import AssignTaskModal from "../components/AssignTaskModal";
+import { useAuthStore } from "../store/authStore";
 
 const detectIncidentType = (incident) => {
   const source = `${incident?.title || ""} ${incident?.description || ""}`.toLowerCase();
+  if (source.includes("earthquake")) {
+    return "EARTHQUAKE";
+  }
   if (source.includes("fire")) {
     return "FIRE";
   }
@@ -27,6 +35,9 @@ const detectPriority = (incident) => {
 };
 
 const typeBadgeClass = (type) => {
+  if (type === "EARTHQUAKE") {
+    return "bg-yellow-100 text-yellow-700";
+  }
   if (type === "FIRE") {
     return "bg-red-100 text-red-700";
   }
@@ -57,6 +68,9 @@ const statusBadgeClass = (status) => {
 };
 
 const typeIcon = (type) => {
+  if (type === "EARTHQUAKE") {
+    return AlertTriangle;
+  }
   if (type === "FIRE") {
     return Flame;
   }
@@ -66,12 +80,35 @@ const typeIcon = (type) => {
   return Waves;
 };
 
+
 const IncidentsPage = () => {
   const [incidents, setIncidents] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [selectedIncidentId, setSelectedIncidentId] = useState(null);
+  const user = useAuthStore((state) => state.user);
+  const isAdmin = user && (user.role === "ADMIN" || user.role === "AUTHORITY");
+
+  const refreshIncidents = async () => {
+    const response = await incidentApi.list();
+    setIncidents(response.data);
+    const tasksRes = await taskApi.list();
+    setTasks(tasksRes.data);
+  };
 
   useEffect(() => {
-    incidentApi.list().then((response) => setIncidents(response.data));
+    refreshIncidents();
   }, []);
+
+  const handleStatusUpdate = async (incidentId, status) => {
+    await incidentApi.updateStatus(incidentId, { status });
+    await refreshIncidents();
+  };
+
+  const handleAssignTask = (incidentId) => {
+    setSelectedIncidentId(incidentId);
+    setAssignModalOpen(true);
+  };
 
   const mapCenter = useMemo(() => {
     if (incidents.length > 0) {
@@ -143,12 +180,52 @@ const IncidentsPage = () => {
                     <p>Latitude: {incident.locationLat}</p>
                     <p>Longitude: {incident.locationLng}</p>
                   </div>
+                  {isAdmin && (() => {
+                    // Hide all admin options if incident is resolved
+                    if (incident.status === "RESOLVED") return null;
+                    const task = getTaskForIncident(incident, tasks);
+                    // If task exists and is COMPLETED, hide all options
+                    if (task && task.status === "COMPLETED") return null;
+                    return (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {!task && (
+                          <button
+                            className="sn-btn-primary flex items-center gap-1 px-3 py-2 text-sm"
+                            onClick={() => handleAssignTask(incident.id)}
+                          >
+                            <PlusCircle size={16} /> Assign Task
+                          </button>
+                        )}
+                        <button
+                          className="sn-btn-neutral flex items-center gap-1 px-3 py-2 text-sm"
+                          onClick={() => handleStatusUpdate(incident.id, "IN_PROGRESS")}
+                          disabled={incident.status === "IN_PROGRESS"}
+                        >
+                          <RefreshCw size={16} /> In Progress
+                        </button>
+                        <button
+                          className="sn-btn-success flex items-center gap-1 px-3 py-2 text-sm"
+                          onClick={() => handleStatusUpdate(incident.id, "RESOLVED")}
+                          disabled={incident.status === "RESOLVED"}
+                        >
+                          <CheckCircle2 size={16} /> Mark Completed
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
           </div>
         </div>
       </div>
+      {/* Modal rendered outside grid for proper overlay */}
+      <AssignTaskModal
+        open={assignModalOpen}
+        onClose={() => setAssignModalOpen(false)}
+        incidentId={selectedIncidentId}
+        onTaskCreated={refreshIncidents}
+      />
     </div>
   );
 };
