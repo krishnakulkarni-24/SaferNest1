@@ -2,6 +2,20 @@ import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client/dist/sockjs";
 
+const resolveSocketBaseUrl = () => {
+  const explicitWsUrl = import.meta.env.VITE_WS_URL;
+  if (explicitWsUrl && explicitWsUrl.trim()) {
+    return explicitWsUrl.trim().replace(/\/$/, "");
+  }
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  if (apiBaseUrl && apiBaseUrl.trim()) {
+    return apiBaseUrl.trim().replace(/\/api\/?$/, "").replace(/\/$/, "");
+  }
+
+  return "https://safernest1.onrender.com";
+};
+
 export const useRealtimeUpdates = (onMessage) => {
   const onMessageRef = useRef(onMessage);
 
@@ -10,7 +24,7 @@ export const useRealtimeUpdates = (onMessage) => {
   }, [onMessage]);
 
   useEffect(() => {
-    const socketUrl = (import.meta.env.VITE_WS_URL || "http://localhost:8081") + "/ws";
+    const socketUrl = `${resolveSocketBaseUrl()}/ws`;
 
     const client = new Client({
       webSocketFactory: () => new SockJS(socketUrl),
