@@ -11,4 +11,5 @@ public interface IncidentService {
     IncidentResponse createIncident(IncidentCreateRequest request, String reporterEmail);
     List<IncidentResponse> getAllIncidents();
     IncidentResponse updateStatus(UUID id, IncidentStatus status);
+    void deleteIncident(UUID id);
 }

@@ -4,7 +4,7 @@ import { hasTaskForIncident } from "../utils/incidentTasks";
 import { getTaskForIncident } from "../utils/getTaskForIncident";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { Flame, HeartPulse, Waves, PlusCircle, CheckCircle2, RefreshCw, AlertTriangle } from "lucide-react";
+import { Flame, HeartPulse, Waves, PlusCircle, CheckCircle2, RefreshCw, AlertTriangle, Trash2 } from "lucide-react";
 import { incidentApi } from "../api/services";
 import AssignTaskModal from "../components/AssignTaskModal";
 import { useAuthStore } from "../store/authStore";
@@ -88,6 +88,17 @@ const IncidentsPage = () => {
   const [selectedIncidentId, setSelectedIncidentId] = useState(null);
   const user = useAuthStore((state) => state.user);
   const isAdmin = user && (user.role === "ADMIN" || user.role === "AUTHORITY");
+  const [deletingId, setDeletingId] = useState(null);
+  const handleDeleteIncident = async (incidentId) => {
+    if (!window.confirm("Are you sure you want to delete this incident? This action cannot be undone.")) return;
+    setDeletingId(incidentId);
+    try {
+      await incidentApi.delete(incidentId);
+      await refreshIncidents();
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const refreshIncidents = async () => {
     const response = await incidentApi.list();
@@ -209,6 +220,13 @@ const IncidentsPage = () => {
                           disabled={incident.status === "RESOLVED"}
                         >
                           <CheckCircle2 size={16} /> Mark Completed
+                        </button>
+                        <button
+                          className="sn-btn-danger flex items-center gap-1 px-3 py-2 text-sm"
+                          onClick={() => handleDeleteIncident(incident.id)}
+                          disabled={deletingId === incident.id}
+                        >
+                          <Trash2 size={16} /> {deletingId === incident.id ? "Deleting..." : "Delete"}
                         </button>
                       </div>
                     );

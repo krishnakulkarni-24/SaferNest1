@@ -67,4 +67,12 @@ public class IncidentServiceImpl implements IncidentService {
         notificationService.broadcast("INCIDENT_STATUS_UPDATED", "Incident status updated", response);
         return response;
     }
+    @Override
+    @Transactional
+    public void deleteIncident(UUID id) {
+        Incident incident = incidentRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Incident not found"));
+        incidentRepository.delete(incident);
+        notificationService.broadcast("INCIDENT_DELETED", "Incident deleted", id);
+    }
 }

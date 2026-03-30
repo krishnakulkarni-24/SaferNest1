@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.util.List;
 import java.util.UUID;
@@ -44,5 +45,11 @@ public class IncidentController {
     public ResponseEntity<IncidentResponse> updateStatus(@PathVariable UUID id,
                                                          @Valid @RequestBody IncidentStatusUpdateRequest request) {
         return ResponseEntity.ok(incidentService.updateStatus(id, request.getStatus()));
+    }
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('AUTHORITY','ADMIN')")
+    public ResponseEntity<Void> deleteIncident(@PathVariable UUID id) {
+        incidentService.deleteIncident(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -9,6 +9,7 @@ export const incidentApi = {
   create: (payload) => api.post("/incidents", payload),
   list: () => api.get("/incidents"),
   updateStatus: (id, payload) => api.put(`/incidents/${id}/status`, payload),
+  delete: (id) => api.delete(`/incidents/${id}`),
 };
 
 export const aiApi = {
