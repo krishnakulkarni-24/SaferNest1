@@ -36,21 +36,21 @@ const AiSummaryCard = ({ incidents }) => {
   }, [reports]);
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg">
+    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <h3 className="font-semibold">AI Summary</h3>
+        <h3 className="text-base font-semibold text-[#111827] dark:text-slate-100">AI Summary</h3>
         <button
           type="button"
           onClick={fetchSummary}
           disabled={loading}
-          className="px-3 py-1 text-sm rounded bg-blue-600 text-white disabled:opacity-60"
+          className="sn-btn-primary px-3 py-1"
         >
           Refresh
         </button>
       </div>
 
       {loading && (
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <span className="inline-block h-4 w-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin" />
           Generating summary...
         </div>
@@ -59,7 +59,7 @@ const AiSummaryCard = ({ incidents }) => {
       {!loading && error && <p className="text-sm text-red-600">{error}</p>}
 
       {!loading && !error && (
-        <p className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-line">
+        <p className="whitespace-pre-line text-sm text-slate-700 dark:text-slate-300">
           {summary || "No summary available yet."}
         </p>
       )}

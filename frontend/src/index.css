@@ -1,7 +1,54 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --sn-primary: #2563eb;
+  --sn-secondary: #1e40af;
+  --sn-accent: #f97316;
+  --sn-danger: #ef4444;
+  --sn-success: #22c55e;
+  --sn-bg: #f9fafb;
+  --sn-text: #111827;
+}
+
 body {
-  @apply bg-slate-100 text-slate-900 dark:bg-slate-900 dark:text-slate-100;
+  @apply bg-[#F9FAFB] text-[#111827] antialiased;
+  font-family: "Inter", sans-serif;
+}
+
+.dark body {
+  @apply bg-slate-950 text-slate-100;
+}
+
+#root {
+  @apply min-h-screen;
+}
+
+@layer components {
+  .sn-card {
+    @apply rounded-2xl bg-white p-5 shadow-md transition-all duration-200 hover:shadow-lg dark:bg-slate-900 dark:shadow-slate-950/40;
+  }
+
+  .sn-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#1E40AF] hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100;
+  }
+
+  .sn-btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-[#EF4444] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-red-600 hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100;
+  }
+
+  .sn-btn-neutral {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-700;
+  }
+
+  .sn-input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-[#2563EB] focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:ring-blue-900/40;
+  }
+
+  .sn-badge {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
+  }
 }
