@@ -17,10 +17,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -29,9 +33,14 @@ import java.util.stream.Collectors;
 public class AiService {
 
     private static final String FALLBACK_SUMMARY = "Unable to generate summary at the moment.";
+    private static final int MAX_REPORTS_PER_CALL = 10;
+    private static final Duration CACHE_TTL = Duration.ofMinutes(10);
+    private static final int MAX_CACHE_SIZE = 100;
 
     private final ObjectMapper objectMapper;
     private final IncidentRepository incidentRepository;
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ConcurrentHashMap<String, CachedSummary> summaryCache = new ConcurrentHashMap<>();
 
     @Value("${openai.api-key:}")
     private String openAiApiKey;
@@ -42,7 +51,7 @@ public class AiService {
     @Value("${openai.model:gpt-4o-mini}")
     private String openAiModel;
 
-    @Value("${openai.max-tokens:180}")
+    @Value("${openai.max-tokens:120}")
     private Integer openAiMaxTokens;
 
     public String summarizeReports(List<String> reports) {
@@ -56,7 +65,17 @@ public class AiService {
         }
 
         try {
-            String prompt = buildPrompt(reports);
+            List<String> normalizedReports = normalizeReports(reports);
+            if (normalizedReports.isEmpty()) {
+                return FALLBACK_SUMMARY;
+            }
+
+            String prompt = buildPrompt(normalizedReports);
+            String cacheKey = buildCacheKey(prompt);
+            String cachedSummary = getCachedSummary(cacheKey);
+            if (cachedSummary != null) {
+                return cachedSummary;
+            }
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -73,7 +92,6 @@ public class AiService {
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
 
-            RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> response = restTemplate.exchange(
                     openAiBaseUrl + "/v1/chat/completions",
                     HttpMethod.POST,
@@ -94,7 +112,12 @@ public class AiService {
             }
 
             String summary = contentNode.asText().trim();
-            return summary.isEmpty() ? FALLBACK_SUMMARY : summary;
+            if (summary.isEmpty()) {
+                return FALLBACK_SUMMARY;
+            }
+
+            cacheSummary(cacheKey, summary);
+            return summary;
         } catch (Exception exception) {
             log.warn("AI summarize failed: {}", exception.getMessage());
             return FALLBACK_SUMMARY;
@@ -127,6 +150,15 @@ public class AiService {
         }
     }
 
+    private List<String> normalizeReports(List<String> reports) {
+        return reports.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .limit(MAX_REPORTS_PER_CALL)
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
     private String buildPrompt(List<String> reports) {
         String incidentList = reports.stream()
                 .map(report -> "- " + report)
@@ -137,5 +169,33 @@ public class AiService {
                 + incidentList
                 + "\n\n"
                 + "Keep it concise (2-3 lines).";
+    }
+
+    private String buildCacheKey(String prompt) {
+        return openAiModel + "::" + prompt.hashCode();
+    }
+
+    private String getCachedSummary(String cacheKey) {
+        CachedSummary cachedSummary = summaryCache.get(cacheKey);
+        if (cachedSummary == null) {
+            return null;
+        }
+
+        if (Duration.between(cachedSummary.createdAt(), Instant.now()).compareTo(CACHE_TTL) > 0) {
+            summaryCache.remove(cacheKey);
+            return null;
+        }
+
+        return cachedSummary.summary();
+    }
+
+    private void cacheSummary(String cacheKey, String summary) {
+        if (summaryCache.size() >= MAX_CACHE_SIZE) {
+            summaryCache.clear();
+        }
+        summaryCache.put(cacheKey, new CachedSummary(summary, Instant.now()));
+    }
+
+    private record CachedSummary(String summary, Instant createdAt) {
     }
 }
