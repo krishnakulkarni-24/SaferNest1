@@ -99,6 +99,8 @@ Frontend supports:
 Use provided `.env.example` files in both projects.
 For backend local runs, create `backend/.env` (same keys as `.env.example`).
 Use JDBC format for `DB_URL`, for example: `jdbc:postgresql://localhost:5432/safernest`.
+For local + deployment checks, set `CORS_ALLOWED_ORIGINS` as comma-separated values, for example:
+`http://localhost:5173,https://*.vercel.app,https://*.onrender.com`
 
 To seed demo data, set `APP_SEED_ENABLED=true` in backend env and restart backend.
 Seeded users:
