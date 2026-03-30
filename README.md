@@ -20,39 +20,12 @@ SaferNest is a real-time disaster response platform that connects citizens, volu
 - DevOps: Docker, Docker Compose
 
 
-## Folder Structure
 
-```text
-new-proj/
-├── backend/
-│   ├── src/main/java/com/safernest/
-│   │   ├── config/
-│   │   ├── controller/
-│   │   ├── dto/
-│   │   ├── entity/
-│   │   ├── enums/
-│   │   ├── exception/
-│   │   ├── mapper/
-│   │   ├── repository/
-│   │   ├── security/
-│   │   └── service/
-│   ├── src/main/resources/application.properties
-│   ├── pom.xml
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── api/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── pages/
-│   │   └── store/
-│   ├── package.json
-│   └── Dockerfile
-├── database/schema.sql
-├── docs/api.md
-├── postman/SaferNest.postman_collection.json
-└── docker-compose.yml
-```
+## Platform Architecture
+
+![SaferNest Architecture](docs/safernest-architecture.png)
+
+*SaferNest – Disaster Response Platform Architecture*
 
 
 ## RBAC Roles
