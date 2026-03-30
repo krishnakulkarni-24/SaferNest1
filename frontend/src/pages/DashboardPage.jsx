@@ -7,16 +7,22 @@ import { useAuthStore } from "../store/authStore";
 
 const getIncidentType = (incident) => {
   const source = `${incident?.title || ""} ${incident?.description || ""}`.toLowerCase();
+  if (source.includes("earthquake")) {
+    return "EARTHQUAKE";
+  }
   if (source.includes("fire")) {
     return "FIRE";
   }
-  if (source.includes("medical") || source.includes("injury") || source.includes("hospital")) {
+  if (source.includes("medical") || source.includes("injury") || source.includes("hospital") || source.includes("ambulance")) {
     return "MEDICAL";
   }
   return "FLOOD";
 };
 
 const getTypeBadgeClass = (type) => {
+  if (type === "EARTHQUAKE") {
+    return "bg-yellow-100 text-yellow-700";
+  }
   if (type === "FIRE") {
     return "bg-red-100 text-red-700";
   }
@@ -27,6 +33,9 @@ const getTypeBadgeClass = (type) => {
 };
 
 const getTypeIcon = (type) => {
+  if (type === "EARTHQUAKE") {
+    return AlertTriangle;
+  }
   if (type === "FIRE") {
     return Flame;
   }

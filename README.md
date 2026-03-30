@@ -1,12 +1,24 @@
 # SaferNest - Disaster Management Platform
 
+## Recent Updates (2026)
+
+- Improved incident location input UX
+- Fixed infinite render loop and dark mode bugs
+- Enhanced admin UI: assign/hide tasks, modal overlays, role-based controls
+- Incident type detection improved (supports "earthquake", correct icons/badges)
+- Live updates via WebSocket (frontend ready; backend config may need review)
+- Comprehensive project analysis and documentation
+
+
 SaferNest is a real-time disaster response platform that connects citizens, volunteers, authorities, and admins for incident reporting, resource allocation, and task coordination.
+
 
 ## Tech Stack
 
 - Backend: Spring Boot 3, Java 17, Spring Security (JWT), JPA, PostgreSQL, Lombok, MapStruct, WebSocket (STOMP)
 - Frontend: React (Vite), Tailwind CSS, Axios, React Router, Zustand, SockJS + STOMP client
 - DevOps: Docker, Docker Compose
+
 
 ## Folder Structure
 
@@ -42,12 +54,14 @@ new-proj/
 └── docker-compose.yml
 ```
 
+
 ## RBAC Roles
 
 - ADMIN: full control
 - AUTHORITY: incident/resource/task management
 - VOLUNTEER: task acceptance and participation
 - CITIZEN: incident reporting and help requests
+
 
 ## Step-by-Step Local Setup
 
@@ -109,6 +123,15 @@ Seeded users:
 - `volunteer@safernest.com` / `Volunteer@123`
 - `citizen@safernest.com` / `Citizen@123`
 
+
+## Key Features
+
+- Real-time incident reporting and updates
+- Role-based dashboards for Admin, Authority, Volunteer, Citizen
+- Task assignment, completion, and resource management
+- Live notifications (WebSocket)
+- Responsive UI with dark mode
+
 ## API Endpoints
 
 - Auth
@@ -131,16 +154,19 @@ Seeded users:
 
 Detailed API docs: `docs/api.md`
 
+
 ## WebSocket Real-time
 
 - Endpoint: `/ws`
 - Topic: `/topic/updates`
 - Event types: new incident, status updates, task updates
 
+
 ## Database Schema
 
 - SQL file: `database/schema.sql`
 - JPA entities map directly to SQL schema
+
 
 ## Postman Collection
 
@@ -155,6 +181,7 @@ Set variables:
 - `taskId`
 - `volunteerId`
 
+
 ## Docker Full Stack Run
 
 ```bash
@@ -166,13 +193,25 @@ Services:
 - Backend: `http://localhost:8081`
 - PostgreSQL: `localhost:5432`
 
+
 ## Deployment Notes (Render/Railway/Vercel/Netlify)
 
 - Backend (Render/Railway): deploy `backend` as a Java service with env vars from `.env.example`
 - PostgreSQL (Railway/Neon): set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`
 - Frontend (Vercel/Netlify): set `VITE_API_BASE_URL` and `VITE_WS_URL` to backend public URL
 
+
 ## Production Checklist
+
+## Troubleshooting & Notes
+
+- If live updates do not appear, check backend WebSocket configuration and CORS settings.
+- For incident type display issues, ensure frontend is rebuilt after backend/logic changes.
+- To hide admin options for completed tasks/incidents, ensure you are using the latest frontend build.
+- For demo/testing, use seeded users and enable `APP_SEED_ENABLED` in backend.
+
+---
+For detailed API usage, see [docs/api.md](docs/api.md). For further help, open an issue or contact the maintainer.
 
 - Replace JWT secret with strong Base64 key
 - Restrict CORS allowed origins
